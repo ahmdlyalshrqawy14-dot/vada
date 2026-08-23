@@ -1,0 +1,13 @@
+version = 1
+
+[[analyzers]]
+name = "kotlin"
+enabled = true
+
+[[analyzers]]
+name = "java"
+enabled = true
+
+[[analyzers]]
+name = "secrets"
+enabled = true
