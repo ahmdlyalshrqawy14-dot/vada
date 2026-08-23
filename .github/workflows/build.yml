@@ -3,6 +3,8 @@ name: Android CI
 on:
   push:
     branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
 
 concurrency:
@@ -83,7 +85,19 @@ jobs:
         run: gradle lintDebug --stacktrace
 
       - name: Unit tests
-        run: gradle testDebugUnitTest --stacktrace
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            gradle testDebugUnitTest --stacktrace
+          else
+            gradle testDebugUnitTest jacocoTestReport --stacktrace
+          fi
+
+      - name: Upload coverage report
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: app/build/reports/jacoco/test/jacocoTestReport.xml
 
       - name: Build debug APK
         run: gradle assembleDebug --stacktrace
