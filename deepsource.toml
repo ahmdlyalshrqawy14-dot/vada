@@ -4,8 +4,11 @@ version = 1
 name = "kotlin"
 enabled = true
 
+[analyzers.meta]
+plugins = ["detekt"]
+
 [[analyzers]]
-name = "java"
+name = "docker"
 enabled = true
 
 [[analyzers]]
