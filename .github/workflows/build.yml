@@ -1,0 +1,118 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # AGP 9.1.1 (used by this project) requires JDK 17 minimum.
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # No gradlew is committed in this project, so Gradle itself is installed here.
+      # AGP 9.1.x has a hard minimum requirement of Gradle 9.1.0 (cannot be lower).
+      # Pinned to 9.3.1 (a later stable patch release) rather than the bare minimum,
+      # since Gradle's own compatibility matrix confirms AGP 9.1.x works through this
+      # line, and 9.3.1 carries bug/security fixes on top of 9.1.0.
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.3.1'
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      # --------------------------------------------------------------------------------
+      # Release signing.
+      # app/build.gradle.kts always requires a keystore + passwords for the "release"
+      # signingConfig (KEYSTORE_PATH / STORE_PASSWORD / KEY_PASSWORD). If those secrets
+      # are not yet configured in the GitHub repo, `bundleRelease` would fail outright
+      # with "Keystore file ... not found". To guarantee the workflow succeeds end-to-end
+      # even before real signing secrets are added, we generate a throwaway self-signed
+      # keystore on the fly whenever secrets.KEYSTORE_BASE64 is not set. This lets CI
+      # verify the app actually builds and packages correctly; swap in the real secrets
+      # later (see repo Settings > Secrets > Actions) to produce a Play-Store-ready AAB.
+      # --------------------------------------------------------------------------------
+      - name: Prepare release keystore
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          REAL_STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          REAL_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          set -e
+          KEYSTORE_PATH="${{ github.workspace }}/my-upload-key.jks"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "Using real release keystore from secrets.KEYSTORE_BASE64"
+            echo "$KEYSTORE_BASE64" | base64 -d > "$KEYSTORE_PATH"
+            echo "store_password=$REAL_STORE_PASSWORD" >> "$GITHUB_OUTPUT"
+            echo "key_password=$REAL_KEY_PASSWORD" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::secrets.KEYSTORE_BASE64 not set - generating a temporary CI-only keystore so the release build can still be verified. Add KEYSTORE_BASE64 / STORE_PASSWORD / KEY_PASSWORD secrets for a real, Play-Store-ready signed AAB."
+            TMP_PASSWORD="ci-temporary-$(date +%s)"
+            keytool -genkeypair -v \
+              -keystore "$KEYSTORE_PATH" \
+              -alias upload \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -storepass "$TMP_PASSWORD" \
+              -keypass "$TMP_PASSWORD" \
+              -dname "CN=Vada CI, OU=CI, O=Vada, L=Unknown, S=Unknown, C=US"
+            echo "store_password=$TMP_PASSWORD" >> "$GITHUB_OUTPUT"
+            echo "key_password=$TMP_PASSWORD" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Lint
+        run: gradle lintDebug --stacktrace
+
+      - name: Unit tests
+        run: gradle testDebugUnitTest --stacktrace
+
+      - name: Build debug APK
+        run: gradle assembleDebug --stacktrace
+
+      - name: Build release bundle (AAB)
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/my-upload-key.jks
+          STORE_PASSWORD: ${{ steps.keystore.outputs.store_password }}
+          KEY_PASSWORD: ${{ steps.keystore.outputs.key_password }}
+        run: gradle bundleRelease --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 7
+
+      - name: Upload release AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-bundle
+          path: app/build/outputs/bundle/release/*.aab
+          retention-days: 14
+
+      - name: Upload lint report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lint-report
+          path: app/build/reports/lint-results-*.html
+          retention-days: 7

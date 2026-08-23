@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Water Drop Outer Glow -->
+    <path
+        android:pathData="M54,28 C54,28 32,54 32,68 C32,80.15 41.85,90 54,90 C66.15,90 76,80.15 76,68 C76,54 54,28 54,28 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:centerX="54"
+                android:centerY="65"
+                android:gradientRadius="35"
+                android:type="radial">
+                <item android:color="#00E5FF" android:offset="0.0" />
+                <item android:color="#00D2FF" android:offset="0.7" />
+                <item android:color="#0088CC" android:offset="1.0" />
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Water Drop Glossy Highlight -->
+    <path
+        android:fillColor="#80FFFFFF"
+        android:pathData="M44,52 C40,58 38,65 40,71 C41,75 43,78 46,80 C44,78 43,74 42,70 C41,65 43,58 47,52 C46,52 45,52 44,52 Z" />
+</vector>

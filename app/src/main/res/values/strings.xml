@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Vada</string>
+    <string name="shortcut_video_label">ضغط فيديو</string>
+    <string name="shortcut_image_label">ضغط صور</string>
+</resources>

@@ -1,0 +1,6 @@
+{
+  "name": "Vada",
+  "description": "تطبيق معالجة وتحويل وسائط ومستندات محلي بالكامل offline",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

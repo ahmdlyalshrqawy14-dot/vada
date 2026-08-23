@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="shortcut_video"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_video_label"
+        android:shortcutLongLabel="@string/shortcut_video_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.aistudio.voda.water"
+            android:targetClass="com.example.MainActivity">
+            <extra android:name="shortcut_route" android:value="video" />
+        </intent>
+    </shortcut>
+    <shortcut
+        android:shortcutId="shortcut_image"
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher"
+        android:shortcutShortLabel="@string/shortcut_image_label"
+        android:shortcutLongLabel="@string/shortcut_image_label">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="com.aistudio.voda.water"
+            android:targetClass="com.example.MainActivity">
+            <extra android:name="shortcut_route" android:value="image" />
+        </intent>
+    </shortcut>
+</shortcuts>
